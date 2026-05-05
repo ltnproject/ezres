@@ -1,1 +1,1 @@
-## loadstring(game:HttpGet("https://raw.githubusercontent.com/YOURNAME/ezres/main/loader.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ltnproject/ezres/main/main.lua"))()
