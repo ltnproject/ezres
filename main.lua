@@ -106,6 +106,20 @@ local function verifyKey(key)
 	return true, data
 end
 
+--// Base64 Decoder
+local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local function base64Decode(data)
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d%d%d%d%d%d', function(x)
+        return string.char(tonumber(x,2))
+    end))
+end
+
 --// Script Loader
 local function launchScript()
     print("[DRK] Fetching main script...")
@@ -114,8 +128,9 @@ local function launchScript()
     if success and response then
         local decodeSuccess, data = pcall(function() return HttpService:JSONDecode(response) end)
         if decodeSuccess and data.data then
-            print("[DRK] Running main script...")
-            loadstring(data.data)()
+            print("[DRK] Decoding and running main script...")
+            local decodedScript = base64Decode(data.data)
+            loadstring(decodedScript)()
         else
             warn("[DRK] Failed to decode script data")
         end
