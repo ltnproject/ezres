@@ -12,7 +12,7 @@ local player = Players.LocalPlayer
 
 --// Configuration
 local DB_URL = "https://ez-res-default-rtdb.asia-southeast1.firebasedatabase.app/keys/"
-local PORTAL_URL = "https://ltnproject.github.io/DrkExternal-Key/" 
+local PORTAL_URL = "https://drk.qzz.io/DrkExternal-Key/" 
 local KEY_FILENAME = "drk_license.txt"
 
 --// Salting.io Configuration for Main Script
