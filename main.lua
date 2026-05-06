@@ -27,6 +27,7 @@ if player.PlayerGui:FindFirstChild("ResolutionGUI") then
 end
 
 --// Utility Functions
+--// Utility Functions
 local function getHWID()
 	local success, result = pcall(function()
 		return game:GetService("RbxAnalyticsService"):GetClientId()
@@ -35,27 +36,71 @@ local function getHWID()
 end
 
 local function notify(text, color)
-	local notif = Instance.new("TextLabel")
-	notif.Size = UDim2.new(0, 200, 0, 30)
-	notif.Position = UDim2.new(0.5, -100, 0.8, 0)
-	notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 30)
-	notif.TextColor3 = Color3.new(1, 1, 1)
-	notif.Text = text
-	notif.Parent = player:WaitForChild("PlayerGui"):FindFirstChild("DrkKeyGUI") or player.PlayerGui:FindFirstChild("ResolutionGUI")
-	
-	local corner = Instance.new("UICorner", notif)
-	
-	task.delay(3, function()
-		TweenService:Create(notif, TweenInfo.new(0.5), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
-		task.wait(0.5)
-		notif:Destroy()
-	end)
+    task.spawn(function()
+        local gui = player.PlayerGui:FindFirstChild("DrkKeyGUI") or player.PlayerGui:FindFirstChild("ResolutionGUI")
+        if not gui then return end
+        
+        local notif = Instance.new("TextLabel")
+        notif.Size = UDim2.new(0, 250, 0, 35)
+        notif.Position = UDim2.new(0.5, -125, 0.8, 0)
+        notif.BackgroundColor3 = color or Color3.fromRGB(30, 30, 30)
+        notif.TextColor3 = Color3.new(1, 1, 1)
+        notif.Text = text
+        notif.Font = Enum.Font.GothamMedium
+        notif.TextSize = 14
+        notif.Parent = gui
+        
+        local corner = Instance.new("UICorner", notif)
+        local stroke = Instance.new("UIStroke", notif)
+        stroke.Color = Color3.new(1,1,1)
+        stroke.Transparency = 0.8
+        
+        task.wait(3)
+        local tween = TweenService:Create(notif, TweenInfo.new(0.5), {TextTransparency = 1, BackgroundTransparency = 1})
+        tween:Play()
+        tween.Completed:Wait()
+        notif:Destroy()
+    end)
+end
+
+--// Robust HTTP Request
+local function httpRequest(url, method, body)
+    method = method or "GET"
+    local success, response
+    
+    -- Try exploit-specific request first
+    local requestFunc = (syn and syn.request) or (http and http.request) or (fluxus and fluxus.request) or request
+    
+    if requestFunc then
+        success, response = pcall(function()
+            local res = requestFunc({
+                Url = url,
+                Method = method,
+                Headers = {["Content-Type"] = "application/json"},
+                Body = body
+            })
+            return res.Body
+        end)
+    end
+    
+    -- Fallback to GetAsync if it's a GET request and exploit request failed/is missing
+    if (not success or not response) and method == "GET" then
+        success, response = pcall(function()
+            -- game:HttpGet is usually available in executors for GET
+            local getFunc = game.HttpGet or function(self, u) return HttpService:GetAsync(u) end
+            return getFunc(game, url)
+        end)
+    end
+    
+    return success, response
 end
 
 --// Main Application Logic (Locked)
 local function startMain()
 	--// Globals
-	getgenv().Resolution = 0.65
+	getgenv().Resolution = {
+        [".gg/scripters"] = 0.65
+    }
 	getgenv().Enabled = true
 
 	--// GUI
@@ -67,7 +112,7 @@ local function startMain()
 	local frame = Instance.new("Frame", gui)
 	frame.Size = UDim2.new(0, 260, 0, 160)
 	frame.Position = UDim2.new(0.5, -130, 0.5, -80)
-	frame.BackgroundColor3 = Color3.fromRGB(15, 10, 25) -- Drk Aesthetic
+	frame.BackgroundColor3 = Color3.fromRGB(15, 10, 25)
 	frame.BorderSizePixel = 0
 	
 	local corner = Instance.new("UICorner", frame)
@@ -78,7 +123,7 @@ local function startMain()
 	stroke.Thickness = 1.5
 	stroke.Transparency = 0.5
 
-	-- Title (drag handle)
+	-- Title
 	local title = Instance.new("TextLabel", frame)
 	title.Size = UDim2.new(1, 0, 0, 35)
 	title.Text = "DRK EXTERNAL - EZRES"
@@ -90,7 +135,6 @@ local function startMain()
 	local titleCorner = Instance.new("UICorner", title)
 	titleCorner.CornerRadius = UDim.new(0, 12)
 
-	-- Minimize
 	local minimize = Instance.new("TextButton", frame)
 	minimize.Size = UDim2.new(0, 30, 0, 30)
 	minimize.Position = UDim2.new(1, -35, 0, 2.5)
@@ -100,7 +144,6 @@ local function startMain()
 	minimize.BorderSizePixel = 0
 	Instance.new("UICorner", minimize)
 
-	-- Value label
 	local valueLabel = Instance.new("TextLabel", frame)
 	valueLabel.Position = UDim2.new(0, 0, 0, 45)
 	valueLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -109,7 +152,6 @@ local function startMain()
 	valueLabel.BackgroundTransparency = 1
 	valueLabel.Font = Enum.Font.Gotham
 
-	-- Slider
 	local slider = Instance.new("Frame", frame)
 	slider.Position = UDim2.new(0.1, 0, 0, 80)
 	slider.Size = UDim2.new(0.8, 0, 0, 6)
@@ -121,12 +163,7 @@ local function startMain()
 	knob.Position = UDim2.new(0.65, -8, -0.8, 0)
 	knob.BackgroundColor3 = Color3.fromRGB(168, 85, 247)
 	Instance.new("UICorner", knob)
-	
-	local knobStroke = Instance.new("UIStroke", knob)
-	knobStroke.Color = Color3.new(1, 1, 1)
-	knobStroke.Thickness = 2
 
-	-- Toggle
 	local toggle = Instance.new("TextButton", frame)
 	toggle.Position = UDim2.new(0.15, 0, 0, 115)
 	toggle.Size = UDim2.new(0.7, 0, 0, 32)
@@ -136,7 +173,7 @@ local function startMain()
 	toggle.Font = Enum.Font.GothamBold
 	Instance.new("UICorner", toggle)
 
-	--// Dragging logic
+	-- Dragging
 	local draggingFrame = false
 	local dragOffset
 	title.InputBegan:Connect(function(input)
@@ -154,7 +191,7 @@ local function startMain()
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingFrame = false end
 	end)
 
-	--// Slider logic
+	-- Slider
 	local draggingKnob = false
 	knob.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingKnob = true end
@@ -164,7 +201,7 @@ local function startMain()
 			local percent = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
 			knob.Position = UDim2.new(percent, -8, -0.8, 0)
 			local value = math.floor((0.1 + percent * 1.5) * 100) / 100
-			getgenv().Resolution = value
+			getgenv().Resolution[".gg/scripters"] = value
 			valueLabel.Text = "Resolution: " .. value
 		end
 	end)
@@ -172,14 +209,12 @@ local function startMain()
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingKnob = false end
 	end)
 
-	--// Toggle logic
 	toggle.MouseButton1Click:Connect(function()
 		getgenv().Enabled = not getgenv().Enabled
 		toggle.Text = "Status: " .. (getgenv().Enabled and "Enabled" or "Disabled")
 		toggle.BackgroundColor3 = getgenv().Enabled and Color3.fromRGB(168, 85, 247) or Color3.fromRGB(150, 50, 50)
 	end)
 
-	--// Minimize logic
 	local minimized = false
 	minimize.MouseButton1Click:Connect(function()
 		minimized = not minimized
@@ -191,12 +226,14 @@ local function startMain()
 		frame.Size = minimized and UDim2.new(0, 260, 0, 35) or UDim2.new(0, 260, 0, 160)
 	end)
 
-	--// Effect loop
-	RunService.RenderStepped:Connect(function()
-		if getgenv().Enabled and camera then
-			camera.CFrame = camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, getgenv().Resolution, 0, 0, 0, 1)
-		end
-	end)
+	if getgenv().gg_scripters == nil then
+		RunService.RenderStepped:Connect(function()
+			if getgenv().Enabled and camera then
+				camera.CFrame = camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, getgenv().Resolution[".gg/scripters"], 0, 0, 0, 1)
+			end
+		end)
+	end
+	getgenv().gg_scripters = "Aori0001"
 	
 	notify("EzRES Loaded Successfully!", Color3.fromRGB(50, 150, 50))
 end
@@ -204,31 +241,29 @@ end
 --// Key Verification System
 local function verifyKey(key)
 	local hwid = getHWID()
-	local success, response = pcall(function()
-		return game:HttpGet(DB_URL .. key .. ".json")
-	end)
+	local success, response = httpRequest(DB_URL .. key .. ".json")
 	
-	if not success or response == "null" then
+	if not success or not response or response == "null" then
 		return false, "Invalid License Key"
 	end
 	
-	local data = HttpService:JSONDecode(response)
+	local decodeSuccess, data = pcall(function() return HttpService:JSONDecode(response) end)
+    if not decodeSuccess or not data then
+        return false, "Invalid Data Format"
+    end
+
 	if not data.active then
 		return false, "This key has been disabled"
 	end
 	
-	if data.expires_at < (os.time() * 1000) then
-		return false, "This key has expired (12h limit)"
+	if data.expires_at and data.expires_at < (os.time() * 1000) then
+		return false, "This key has expired"
 	end
 	
 	-- HWID Binding
 	if data.hwid == "UNBOUND" then
 		-- Bind key to current HWID
-		pcall(function()
-			-- Note: Roblox scripts usually can't PATCH/PUT to Firebase directly without a proxy
-			-- For this demo, we assume the user will bind it or it's handled by backend
-			-- In a real scenario, you'd use a server-side proxy
-		end)
+		httpRequest(DB_URL .. key .. ".json", "PATCH", HttpService:JSONEncode({hwid = hwid}))
 	elseif data.hwid ~= hwid then
 		return false, "Key is bound to another device"
 	end
