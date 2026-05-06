@@ -1,3 +1,4 @@
+print("[DRK] Loader Executing...")
 --[[
     EzRES - Secure Loader
     Verifies key and loads main script from Salting.io
@@ -12,7 +13,7 @@ local player = Players.LocalPlayer
 
 --// Configuration
 local DB_URL = "https://ez-res-default-rtdb.asia-southeast1.firebasedatabase.app/keys/"
-local PORTAL_URL = "https://drk.qzz.io/DrkExternal-Key/" 
+local PORTAL_URL = "https://ltnproject.github.io/DrkExternal-Key/" 
 local KEY_FILENAME = "drk_license.txt"
 
 --// Salting.io Configuration for Main Script
@@ -95,7 +96,10 @@ local function verifyKey(key)
     if not decodeSuccess or not data then return false, "Invalid Data Format" end
 
 	if not data.active then return false, "Key disabled" end
-	if data.expires_at and data.expires_at < (os.time() * 1000) then return false, "Key expired" end
+	local currentTime = os.time() * 1000
+	if data.expires_at and data.expires_at < currentTime then 
+        return false, "Key expired" 
+    end
 	
 	if data.hwid == "UNBOUND" then
 		httpRequest(DB_URL .. key .. ".json", "PATCH", HttpService:JSONEncode({hwid = hwid}))
