@@ -130,7 +130,18 @@ local function launchScript()
         if decodeSuccess and data.data then
             print("[DRK] Decoding and running main script...")
             local decodedScript = base64Decode(data.data)
-            loadstring(decodedScript)()
+            local func, err = loadstring(decodedScript)
+            
+            if func then
+                task.spawn(function()
+                    local success, runErr = pcall(func)
+                    if not success then
+                        warn("[DRK] Script execution error: " .. tostring(runErr))
+                    end
+                end)
+            else
+                warn("[DRK] Failed to load payload: " .. tostring(err))
+            end
         else
             warn("[DRK] Failed to decode script data")
         end
